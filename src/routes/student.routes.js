@@ -1,8 +1,12 @@
+// src/routes/student.routes.js
 const express = require('express');
 const router = express.Router();
-const { getUsers, addUser } = require('../controllers/student.controller');
+const { insertStudentAndCourse, updateStudentCourse, deleteStudent } = require('../controllers/student.controller');
 
-router.get('/', getUsers);
-router.post('/', addUser);
+
+// Route to handle the insert operation
+router.post('/insertStudentCourse', insertStudentAndCourse);
+router.put('/updateStudentCourse', updateStudentCourse);
+router.delete('/deleteStudent/:id', deleteStudent);
 
 module.exports = router;
