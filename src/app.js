@@ -1,4 +1,3 @@
-// src/app.js
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -15,13 +14,10 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-// Connect to DB
 connectDB();
 
-// Use Routes
 app.use('/api/students', studentRoutes);
 app.use('/api/courses', coursesRoute);
-app.use('/api/student-course', coursesStudentsRoute);
 app.use('/api/student-course', coursesStudentsRoute);
 
 const PORT = process.env.PORT || 5000;

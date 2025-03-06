@@ -14,7 +14,6 @@ const insertStudentAndCourse = async (req, res) => {
         academicYear
     } = req.body;
 
-    // Ensure required fields are present
     if (!firstName || !lastName || !email || !courseName) {
         return res.status(400).json({ error: "Missing required fields" });
     }
@@ -41,22 +40,20 @@ const insertStudentAndCourse = async (req, res) => {
 
 
 const updateStudentCourse = async (req, res) => {
-  const { studentId, newCourseName, studentDetails } = req.body;
+  const { newCourseName, studentDetails } = req.body; 
+  const { itemId } = req.params; 
 
   try {
-    // Connect to the database
     let pool = await sql.connect(dbConfig);
 
-    // Check if the student exists
     const studentQuery = await pool.request()
-      .input('studentId', sql.UniqueIdentifier, studentId)
+      .input('studentId', sql.UniqueIdentifier, itemId) 
       .query('SELECT * FROM Students WHERE StudentID = @studentId');
 
     if (studentQuery.recordset.length === 0) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // If new course name is provided, find the corresponding CourseID
     let newCourseId = null;
     if (newCourseName) {
       const courseQuery = await pool.request()
@@ -70,31 +67,21 @@ const updateStudentCourse = async (req, res) => {
       newCourseId = courseQuery.recordset[0].CourseID;
     }
 
-    // Start updating the student details
     let updateStudentQuery = `
       UPDATE Students 
       SET FirstName = @firstName, 
           LastName = @lastName, 
-          Gender = @gender,
           DOB = @dob,
-          Email = @email,
-          PhoneNumber = @phoneNumber,
-          Address = @address,
-          AcademicYear = @academicYear
+          Grade = @grade
     `;
     
     const updateParams = pool.request()
-      .input('studentId', sql.UniqueIdentifier, studentId)
       .input('firstName', sql.NVarChar, studentDetails.firstName)
       .input('lastName', sql.NVarChar, studentDetails.lastName)
-      .input('gender', sql.NVarChar, studentDetails.gender)
       .input('dob', sql.Date, studentDetails.dob)
-      .input('email', sql.NVarChar, studentDetails.email)
-      .input('phoneNumber', sql.NVarChar, studentDetails.phoneNumber)
-      .input('address', sql.NVarChar, studentDetails.address)
-      .input('academicYear', sql.Int, studentDetails.academicYear);
+      .input('grade', sql.NVarChar, studentDetails.grade);
 
-    // If newCourseId is provided, update CourseID
+
     if (newCourseId) {
       updateStudentQuery += `, CourseID = @newCourseId `;
       updateParams.input('newCourseId', sql.UniqueIdentifier, newCourseId);
@@ -102,7 +89,8 @@ const updateStudentCourse = async (req, res) => {
 
     updateStudentQuery += ` WHERE StudentID = @studentId`;
 
-    // Execute the update query
+    updateParams.input('studentId', sql.UniqueIdentifier, itemId); 
+
     const result = await updateParams.query(updateStudentQuery);
 
     if (result.rowsAffected[0] > 0) {
@@ -118,11 +106,11 @@ const updateStudentCourse = async (req, res) => {
   }
 };
 
+
 const deleteStudent = async (req, res) => {
-    const studentId = req.params.id;  // Get StudentIntID from the URL params
+    const studentId = req.params.id;  
 
     try {
-        // SQL query to delete the student based on the given StudentIntID
         const result = await sql.query`DELETE FROM Students WHERE StudentID = ${studentId}`;
 
         if (result.rowsAffected[0] > 0) {
@@ -136,8 +124,57 @@ const deleteStudent = async (req, res) => {
     }
 };
  
+const getAllDetailsByStudent = async (req, res) => {
+  const studentId = req.params.id;
+
+  try {
+
+    await connectDB(); 
+
+    const query = `
+      SELECT 
+        S.StudentID,
+        S.StudentIntID,
+        S.CourseID,
+        S.FirstName,
+        S.LastName,
+        S.DOB,
+        S.Gender,
+        S.Email,
+        S.PhoneNumber,
+        S.Address,
+        S.IsActive,
+        S.AcademicYear,
+        C.CourseName,
+        C.CourseDuration,
+        C.Credits,
+        S.Grade
+      FROM Students AS S
+      INNER JOIN Courses AS C ON S.CourseID = C.CourseID
+      WHERE S.StudentID = @studentId
+      ORDER BY S.DateJoined DESC;
+    `;
+
+    const request = new sql.Request();
+    request.input('studentId', sql.UniqueIdentifier, studentId); 
+
+    const result = await request.query(query);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: 'No student found with the provided ID' });
+    }
+
+    res.status(200).json(result.recordset); 
+  } catch (err) {
+    console.error('Error executing query:', err);
+    return res.status(500).json({ error: 'Error executing query', details: err.message });
+  }
+};
+
+
 module.exports = {
     insertStudentAndCourse,
     updateStudentCourse,
-    deleteStudent
+    deleteStudent,
+    getAllDetailsByStudent
 };

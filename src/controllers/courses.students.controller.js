@@ -1,10 +1,10 @@
-// controller/coursesStudentsController.js
 const { sql } = require('../config/dbConfig');
 
 const getCoursesAndStudents = async (req, res) => {
     try {
         const query = `
             SELECT 
+                S.StudentID,
                 S.StudentIntID,
                 S.CourseID,
                 S.FirstName,
@@ -18,14 +18,15 @@ const getCoursesAndStudents = async (req, res) => {
                 S.AcademicYear,
                 C.CourseName,
                 C.CourseDuration,
-                C.Credits
+                C.Credits,
+                S.Grade
             FROM Students AS S
             INNER JOIN Courses AS C ON S.CourseID = C.CourseID
             ORDER BY S.DateJoined DESC;
         `;
 
         const result = await sql.query(query);
-        res.status(200).json(result.recordset); // Send the result as JSON
+        res.status(200).json(result.recordset); 
     } catch (err) {
         console.error('Error fetching students and courses:', err);
         res.status(500).json({ message: 'Error fetching data from students and courses' });
