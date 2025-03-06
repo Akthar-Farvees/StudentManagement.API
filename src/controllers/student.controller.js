@@ -1,11 +1,14 @@
 const { sql } = require('../config/dbConfig');
 const { connectDB, dbConfig } = require('../config/dbConfig.js');
 
-const insertStudentAndCourse = async (req, res) => {
+
+
+const insertStudent = async (req, res) => {
     const {
         firstName,
         lastName,
         dob,
+        grade,
         gender,
         email,
         phoneNumber,
@@ -14,24 +17,26 @@ const insertStudentAndCourse = async (req, res) => {
         academicYear
     } = req.body;
 
-    if (!firstName || !lastName || !email || !courseName) {
+    if (!firstName || !lastName || !courseName) {
         return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
-      
-        const result = await sql.query`
-            EXEC InsertStudent 
-                @FirstName = ${firstName}, 
-                @LastName = ${lastName}, 
-                @DOB = ${dob}, 
-                @Gender = ${gender}, 
-                @Email = ${email}, 
-                @PhoneNumber = ${phoneNumber}, 
-                @Address = ${address}, 
-                @CourseName = ${courseName}, 
-                @AcademicYear = ${academicYear}`;
-        
+        const pool = await connectDB();
+
+        const result = await pool.request()
+            .input('FirstName', sql.NVarChar, firstName)
+            .input('LastName', sql.NVarChar, lastName)
+            .input('DOB', sql.Date, dob)
+            .input('Grade', sql.NVarChar, grade)
+            .input('Gender', sql.NVarChar, gender)
+            .input('Email', sql.NVarChar, email)
+            .input('PhoneNumber', sql.NVarChar, phoneNumber)
+            .input('Address', sql.NVarChar, address)
+            .input('CourseName', sql.NVarChar, courseName)
+            .input('AcademicYear', sql.NVarChar, academicYear)
+            .execute('InsertStudent');
+
         res.status(200).json({ message: "Student and course inserted successfully!", data: result.recordset });
     } catch (err) {
         console.error("Error calling stored procedure: ", err.message);
@@ -181,7 +186,7 @@ const getAllDetailsByStudent = async (req, res) => {
 
 
 module.exports = {
-    insertStudentAndCourse,
+    insertStudent,
     updateStudentCourse,
     deleteStudent,
     getAllDetailsByStudent

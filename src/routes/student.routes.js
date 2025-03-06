@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { insertStudentAndCourse, updateStudentCourse, deleteStudent, getAllDetailsByStudent } = require('../controllers/student.controller');
+const { insertStudent, updateStudentCourse, deleteStudent, getAllDetailsByStudent } = require('../controllers/student.controller');
 
-router.post('/insertStudentCourse', insertStudentAndCourse);
+router.post('/insertStudent', insertStudent);
 router.put('/updateStudentCourse/:itemId', updateStudentCourse);
 router.delete('/deleteStudent/:id', deleteStudent);
 router.get('/getDetailsByStudent/:id', getAllDetailsByStudent);
