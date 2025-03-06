@@ -19,6 +19,7 @@ const insertStudentAndCourse = async (req, res) => {
     }
 
     try {
+      
         const result = await sql.query`
             EXEC InsertStudent 
                 @FirstName = ${firstName}, 
@@ -44,7 +45,12 @@ const updateStudentCourse = async (req, res) => {
   const { itemId } = req.params; 
 
   try {
-    let pool = await sql.connect(dbConfig);
+    const pool = await connectDB();
+
+    if (!pool.connected) { 
+      await pool.connect();
+      console.log("Reconnected to SQL Server");
+  }
 
     const studentQuery = await pool.request()
       .input('studentId', sql.UniqueIdentifier, itemId) 
@@ -101,27 +107,29 @@ const updateStudentCourse = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Internal Server Error' });
-  } finally {
-    sql.close();
   }
 };
 
 
 const deleteStudent = async (req, res) => {
-    const studentId = req.params.id;  
+  const studentId = req.params.id;
 
-    try {
-        const result = await sql.query`DELETE FROM Students WHERE StudentID = ${studentId}`;
+  try {
+      const pool = await connectDB();
 
-        if (result.rowsAffected[0] > 0) {
-            res.status(200).json({ message: 'Student deleted successfully' });
-        } else {
-            res.status(404).json({ message: 'Student not found' });
-        }
-    } catch (err) {
-        console.error('Error deleting student:', err);
-        res.status(500).json({ message: 'Error deleting student' });
-    }
+      const result = await pool.request()
+          .input('studentId', sql.UniqueIdentifier, studentId)
+          .query('DELETE FROM Students WHERE StudentID = @studentId');
+
+      if (result.rowsAffected[0] > 0) {
+          res.status(200).json({ message: 'Student deleted successfully' });
+      } else {
+          res.status(404).json({ message: 'Student not found' });
+      }
+  } catch (err) {
+      console.error('Error deleting student:', err);
+      res.status(500).json({ message: 'Error deleting student' });
+  }
 };
  
 const getAllDetailsByStudent = async (req, res) => {
@@ -129,7 +137,7 @@ const getAllDetailsByStudent = async (req, res) => {
 
   try {
 
-    await connectDB(); 
+    const pool = await connectDB();
 
     const query = `
       SELECT 
@@ -155,7 +163,7 @@ const getAllDetailsByStudent = async (req, res) => {
       ORDER BY S.DateJoined DESC;
     `;
 
-    const request = new sql.Request();
+    const request = pool.request();
     request.input('studentId', sql.UniqueIdentifier, studentId); 
 
     const result = await request.query(query);

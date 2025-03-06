@@ -1,7 +1,8 @@
-const { sql } = require('../config/dbConfig');
+const { connectDB } = require('../config/dbConfig');
 
 const getCoursesAndStudents = async (req, res) => {
     try {
+        const pool = await connectDB();
         const query = `
             SELECT 
                 S.StudentID,
@@ -25,7 +26,12 @@ const getCoursesAndStudents = async (req, res) => {
             ORDER BY S.DateJoined DESC;
         `;
 
-        const result = await sql.query(query);
+        const result = await pool.request().query(query);
+
+        if (result.recordset.length === 0) {
+            return res.status(  ).json({ message: 'No data found, students and courses are empty' });
+        }
+
         res.status(200).json(result.recordset); 
     } catch (err) {
         console.error('Error fetching students and courses:', err);
